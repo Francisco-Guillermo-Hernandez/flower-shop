@@ -1,0 +1,30 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/server.ts",
+  "type": "commonjs",
+  "scripts": {
+    "tsc": "tsc",
+    "typeorm": "typeorm-ts-node-commonjs",
+    "start:server": "tsx src/server"
+  },
+  "paths": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.12.1",
+  "dependencies": {
+    "@trpc/server": "^11.4.3",
+    "@types/aws-lambda": "^8.10.150",
+    "mongodb": "^6.15.0",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.25",
+    "typescript": "^5.8.3",
+    "zod": "^4.0.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.13",
+    "tsx": "^4.20.3"
+  }
+}
