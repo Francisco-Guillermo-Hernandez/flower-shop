@@ -9,12 +9,13 @@ import env from './environment';
 /**
  * 
  */
+import { HomeRouter } from './routers/home.router';
 import { FlowerRouter } from './routers/flower.router';
 
 /**
  * 
  */
-const appRouter = mergeRouters(FlowerRouter, );
+const appRouter = mergeRouters(...[HomeRouter, FlowerRouter]);
 
 /**
  * 
