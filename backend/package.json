@@ -7,7 +7,7 @@
   "scripts": {
     "tsc": "tsc",
     "typeorm": "typeorm-ts-node-commonjs",
-    "start:server": "tsx src/server",
+    "start:server": "tsx watch src/server",
     "build:prod": "esbuild src/server --bundle --platform=node --outfile=production/server.js"
   },
   "paths": {},
