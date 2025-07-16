@@ -1,9 +1,10 @@
 
 import 'reflect-metadata';
-import { createHTTPServer } from '@trpc/server/adapters/standalone';
+import { createHTTPServer, CreateHTTPContextOptions } from '@trpc/server/adapters/standalone';
 import { awsLambdaRequestHandler } from  '@trpc/server/adapters/aws-lambda';
+import { mergeRouters, router, procedure } from './trpc';
+import { Responses as R } from './utils/responses';
 import { createContext } from './context';
-import { mergeRouters } from './trpc';
 import env from './environment';
 
 /**
@@ -15,7 +16,11 @@ import { FlowerRouter } from './routers/flower.router';
 /**
  * 
  */
-const appRouter = mergeRouters(...[HomeRouter, FlowerRouter]);
+const appRouter = router({
+    ...HomeRouter,
+    flower: FlowerRouter
+});
+
 
 /**
  * 
@@ -33,7 +38,27 @@ export const handler = awsLambdaRequestHandler({
  * 
  */
 if (env.MODE === 'development') {
-    createHTTPServer({ router: appRouter })
-        .listen(env.SERVER_PORT, () => console.info(`Running in development mode in the port: ${env.SERVER_PORT}`));
+    createHTTPServer({
+        router: appRouter,
+        createContext: ({ req, res }: CreateHTTPContextOptions) => {
+            return {
+                headers: req?.headers ?? []
+            }
+        },
+        onError: ({ error, type, path, input, ctx, req}) => {
+            if (error.code === R.InternalServerError) {
+                error.message = 'Internal server error'
+            }
+
+            if (error.code === R.Unauthorized) {
+                error.message = 'Unauthorized'
+                
+            }
+
+            return {  stack: '', data: {} }
+        }
+        
+    })
+    .listen(env.SERVER_PORT, () => console.info(`Running in development mode in the port: ${env.SERVER_PORT}`));
 }
 
