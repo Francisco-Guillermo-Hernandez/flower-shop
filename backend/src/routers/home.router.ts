@@ -5,6 +5,6 @@ import { router, procedure } from '../trpc'
 /**
  * 
  */
-export const HomeRouter = router({
-    '': procedure.meta({ authenticated: false }).query(({ctx}) => 'Hello'),
-});
+export const HomeRouter = {
+    '': procedure.meta({ authenticated: false }).query(({ctx}) => 'Hello 👋'),
+};
