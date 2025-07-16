@@ -1,11 +1,17 @@
 
 import { Entity, ObjectIdColumn, ObjectId, Column, PrimaryColumn } from 'typeorm'
+import { DynamicConstructor } from '../utils/decorators';
 
 @Entity('flowers')
+@DynamicConstructor()
 export class Flower {
 
-    @ObjectIdColumn()
-    id!: ObjectId;
+    @ObjectIdColumn({ select: false })
+    _id!: ObjectId;
+
+    get id(): string {
+        return this._id.toHexString();
+    }
 
     @Column({ type: 'string', length: 50 })
     name!: string
@@ -28,5 +34,8 @@ export class Flower {
     @Column({ type: 'date' })
     lastUpdate!: Date
 
+    constructor(args: any) {
+        this.lastUpdate = new Date();
+    }
 
 }
