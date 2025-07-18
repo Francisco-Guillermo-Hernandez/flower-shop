@@ -18,11 +18,30 @@ export class FlowerController implements ControllerBaseInterface<FlowerTypeValid
         const dataSource = await ctx.dataSource;
         try {
             const flowerRepository = dataSource.getRepository(Flower);
-            
+
+            // Parse pagination values from headers, fallback to defaults if not present
+            let sizePerPage = parseInt(ctx.headers?.['x-size-per-page'] as string) || 10;
+            const page = parseInt(ctx.headers?.['x-page'] as string) || 1;
+
+            if (sizePerPage > 20) {
+                sizePerPage = 20;
+            }
+
+            const skip = (page - 1) * sizePerPage;
+            const take = sizePerPage;
+
+            const [data, total] = await flowerRepository.findAndCount({skip, take});
+
             return {
                 status: R.Success,
-                data: await flowerRepository.find()
-            }
+                data,
+                meta: {
+                    total,
+                    page,
+                    sizePerPage,
+                    totalPages: Math.ceil(total / sizePerPage)
+                }
+            };
         } catch (error) {
             throw new Error('Failed to retrieve data from the server');
         }
@@ -39,17 +58,11 @@ export class FlowerController implements ControllerBaseInterface<FlowerTypeValid
 
             const id = ctx.headers?.['x-resource-id'];
 
-            console.log('id')
-            console.log(id)
-
             if (!id) {
                 throw new TRPCError({ code: R.BadRequest, cause: 'There are no x-resource-id header', message: 'Add the x-resource-id header',  });
             }
             
-
             const flowerRepository = dataSource.getRepository(Flower);
-
-
             const flower = await flowerRepository.findOne({ where: { _id: getId(id) }});
 
 
@@ -59,7 +72,6 @@ export class FlowerController implements ControllerBaseInterface<FlowerTypeValid
                     data: {},
                     message: ''
                 };
-                // throw new TRPCError({ code: R.NotFound, cause: 'sample', message: 'sample',  });
             }
             return {
                 status: R.Success, 
@@ -74,6 +86,7 @@ export class FlowerController implements ControllerBaseInterface<FlowerTypeValid
     /**
      * 
      * @param param
+     * @returns 
      */
     public async listByFilter({ ctx, input }: Params<any>): Promise<TRPCResponse> {
         try {
@@ -100,10 +113,10 @@ export class FlowerController implements ControllerBaseInterface<FlowerTypeValid
             return {
                 status: R.Success,
                 data: {},
-                message: '',
-            }
-        } catch (error) {
-            throw new Error('Failed to create flower');
+                message: 'The record was created ',
+            };
+        } catch (error: any) {
+            throw new TRPCError({ code: error?.code?? '', cause: error.cause, message: error.message });
         }
     }
 
@@ -119,40 +132,56 @@ export class FlowerController implements ControllerBaseInterface<FlowerTypeValid
 
             const id = ctx.headers?.['x-resource-id'] || '';
             const flowerRepository = dataSource.getRepository(Flower);
-            const flower = await flowerRepository.findOne(  { where: { _id: getId(id)  },  select: { _id: false} } );
+            const flower = await flowerRepository.findOne({ where: { _id: getId(id) } });
 
+            if (!flower) {
+                throw new TRPCError({ code: R.NotFound, cause: 'Flower not found', message: 'Flower not found' });
+            }
 
-               // ctx.headers
-            // delete input?.id;
-            // Object.assign(flower, input);
-            // return await flowerRepository.update(input?.id ?? '', new Flower(input));
+            Object.assign(flower, input);
+            const result = await flowerRepository.update(getId(id), flower);
+        
+            if (result.affected === 0) {
+                return {
+                    status: R.NotModified,
+                    data: {},
+                    message:  `The element wasn't mofidied`
+                };
+            }
 
             return {
                 status: R.Success,
                 data: {},
-                message: ''
-            }
+                message: 'The element was modified successfully'
+            };
         } catch (error: any) {
-            throw new Error(error?.message ?? '');
+            throw new TRPCError({ code: error?.code?? '', cause: error.cause, message: error.message });
         }
     }
 
+    /**
+     * 
+     * @param param
+     * @returns 
+     */
     public async delete({ ctx, input }: Params<DeleteValidatorType>): Promise<TRPCResponse> {
         const dataSource = await ctx.dataSource;
         try {
             const flowerRepository = dataSource.getRepository(Flower);
-            const flower = await flowerRepository.findOneBy({ id: input?.id });
-            if (!flower) {
-                throw new Error('Flower not found');
+            const result = await flowerRepository.delete({ _id: getId(input?.id ?? '') });
+            
+            if ((result?.affected ?? 0) > 0) {
+                return { 
+                    status: R.Success,
+                    data: {},
+                    message: 'The element was removed successfully'
+                };
             }
-            await flowerRepository.remove(flower);
-            return { 
-                status: R.Success,
-                data: {},
-                message: ''
-            };
-        } catch (error) {
-            throw new Error('Failed to delete flower');
+
+            throw new TRPCError({ code: R.BadRequest, cause: `The id of the element doesn't exist`, message: 'The element cannot be deleted',  });
+
+        } catch (error: any) {
+            throw new TRPCError({ code: error?.code?? '', cause: error.cause, message: error.message });
         }
     }
 }
