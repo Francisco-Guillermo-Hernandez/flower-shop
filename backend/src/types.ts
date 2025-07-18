@@ -23,6 +23,7 @@ export type TRPCResponse = {
     status: Responses,
     data?: any,
     message?: string,
+    meta?: any;
 }
 
 
